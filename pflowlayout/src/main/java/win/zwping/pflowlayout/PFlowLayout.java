@@ -4,6 +4,7 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.os.Build;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
@@ -15,8 +16,18 @@ import java.util.List;
  * <p>describe：
  * <p>    note：
  * <p>  author：zwp on 2017/9/19 0019 mail：1101558280@qq.com web: http://www.zwping.win </p>
+ *
+ * @deprecated 未去掉顶部一行和最左的一列多余的值
  */
+@Deprecated
 public class PFlowLayout extends ViewGroup {
+
+    private static final int LEFT = -1;
+    private static final int CENTER = 0;
+    private static final int RIGHT = 1;
+
+    private int rowW, columnH; //行之间的宽度、列之间的高度
+    private int mGravity = LEFT;
 
     public PFlowLayout(Context context) {
         super(context);
@@ -39,8 +50,23 @@ public class PFlowLayout extends ViewGroup {
         init();
     }
 
-    private int rowW = 20;
-    private int columnH = 50; //行之间的宽度、列之间的高度
+    private void init() {
+        rowW = 10;
+        columnH = 10;
+        for (int i = 0; i < 11; i++) {
+            PTextView textView = new PTextView(getContext());
+            textView.setLayoutParams(new MarginLayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+            textView.setText("Java" + i + "");
+            textView.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    view.setSelected(!view.isSelected());
+                    Toast.makeText(getContext(), "---" + view.isSelected(), Toast.LENGTH_SHORT).show();
+                }
+            });
+            addView(textView);
+        }
+    }
 
     /*设置该容器的宽高*/
     @Override
@@ -66,50 +92,36 @@ public class PFlowLayout extends ViewGroup {
         for (int i = 0; i < cCount; i++) {
             View child = getChildAt(i);
             /*测量获取子布局的宽高及对应参数*/
-            setViewLayoutParams(child, 0, (0 == height ? 0 : columnH), 0, 0); //给非第一行的子控件设置top
+            setViewLayoutParams(child, (0 == i ? 0 : rowW), (0 == height ? 0 : columnH), 0, 0);//去掉x y == 0的top 和 left值
             measureChild(child, widthMeasureSpec, heightMeasureSpec);
             MarginLayoutParams lp = (MarginLayoutParams) child.getLayoutParams();
             int childWidth = child.getMeasuredWidth() + lp.leftMargin + lp.rightMargin;
             int childHeight = child.getMeasuredHeight() + lp.topMargin + lp.bottomMargin;
 
             /*根据迭加lineWidth增加高度*/
-            if (lineWidth + childWidth + rowW > sizeWidth) {
-                setViewLayoutParams(child, 0, (1 == cCount ? 0 : columnH), 0, 0); //给换行的第一个设置top
-                width = Math.max(lineWidth, childWidth);
+            if (lineWidth + childWidth > sizeWidth) {
+                setViewLayoutParams(child, 0, (1 == cCount ? 0 : columnH), 0, 0); //去掉x y == 0的top 和 left值
+                childWidth = childWidth - (0 == i ? 0 : rowW);
+                width = Math.max(width, Math.max(lineWidth, childWidth));
                 lineWidth = childWidth;
                 height += childHeight;
                 lineHeight = childHeight;
             } else {
-                setViewLayoutParams(child, (0 == i ? 0 : rowW), lp.topMargin, 0, 0);
+//                Log.i("TAG", i + "====");
                 lineWidth += childWidth;
                 lineHeight = Math.max(lineHeight, childHeight);
             }
 
             if (i == cCount - 1) { //最后一个子控件了
                 width = Math.max(width, lineWidth);
-                if (0 != i) height += lineHeight;
+                height += lineHeight;
+                Log.i("TAG", width + "====" + lineWidth);
             }
         }
         /*设置该容器的宽高*/
         setMeasuredDimension((modeWidth == MeasureSpec.EXACTLY) ? sizeWidth : width + getPaddingLeft() + getPaddingRight(), //如果父布局为match_parent
                 (modeHeight == MeasureSpec.EXACTLY) ? sizeHeight : height + getPaddingTop() + getPaddingBottom());
-    }
-
-    private void init() {
-        for (int i = 0; i < 100; i++) {
-            PTextView textView = new PTextView(getContext());
-            textView.setLayoutParams(new MarginLayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
-            textView.setText("" + i + "");
-            textView.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    view.setSelected(!view.isSelected());
-                    Toast.makeText(getContext(), "---" + view.isSelected(), Toast.LENGTH_SHORT).show();
-                }
-            });
-            addView(textView);
-
-        }
+        Log.i("TAG", ((modeWidth == MeasureSpec.EXACTLY) ? sizeWidth : width + getPaddingLeft() + getPaddingRight()) + "-----------" + ((modeHeight == MeasureSpec.EXACTLY) ? sizeHeight : height + getPaddingTop() + getPaddingBottom()));
     }
 
     /*按行记录所有子控件*/
@@ -124,11 +136,6 @@ public class PFlowLayout extends ViewGroup {
         lp.setMargins(left, top, right, bottom);
         view.setLayoutParams(lp);
     }
-
-    private static final int LEFT = -1;
-    private static final int CENTER = 0;
-    private static final int RIGHT = 1;
-    private int mGravity = LEFT;
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
@@ -151,18 +158,19 @@ public class PFlowLayout extends ViewGroup {
             View child = getChildAt(i);
             /*子控件的宽高及对应参数*/
             MarginLayoutParams lp = (MarginLayoutParams) child.getLayoutParams();
-            int childWidth = child.getMeasuredWidth();
-            int childHeight = child.getMeasuredHeight();
+            int childWidth = child.getMeasuredWidth() + lp.leftMargin + lp.rightMargin;
+            int childHeight = child.getMeasuredHeight() + lp.topMargin + lp.bottomMargin;
 
-            if (childWidth + lp.leftMargin + lp.rightMargin + lineWidth > width) { //换行
+            if (childWidth + lineWidth > width) { //换行
+//                Log.i("TAG", i + "------");
                 mLineHeight.add(lineHeight);
-                mLineWidth.add(lineWidth + lp.leftMargin + lp.rightMargin);
+                mLineWidth.add(lineWidth);
                 mAllViews.add(lineViews);
                 lineWidth = 0;
                 lineViews = new ArrayList<View>();
             }
-            lineWidth += childWidth + lp.leftMargin + lp.rightMargin;
-            lineHeight = Math.max(lineHeight, childHeight + lp.topMargin + lp.bottomMargin);
+            lineWidth += childWidth;
+            lineHeight = Math.max(lineHeight, childHeight);
             lineViews.add(child);
         }
         mLineWidth.add(lineWidth);

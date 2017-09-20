@@ -32,16 +32,11 @@ public class PTextView extends AppCompatTextView {
 
     private Paint mPaintIn, mPaintOut; //画笔
     private RectF mRectIn, mRectOut; //矩形
-    private int lineW, round; //描边宽度、背景角度
-    private int[] tP = new int[4];
+    private int lineW, round, pL, pT, pR, pB; //描边宽度、背景角度、padding left...
 
     private void initView() {
-        setGravity(Gravity.CENTER);
-//        setLines(1);
-//        setEllipsize(TextUtils.TruncateAt.END);
-        lineW = 2; //默认描边宽度
+        lineW = 8; //默认描边宽度
         round = 10; //默认背景角度
-        tP = new int[]{40, 20, 40, 20};
 
         mPaintIn = new Paint();
         mPaintIn.setAntiAlias(true); //抗锯齿
@@ -52,21 +47,23 @@ public class PTextView extends AppCompatTextView {
         mPaintOut = new Paint();
         mPaintOut.setAntiAlias(true); //抗锯齿
         mPaintOut.setDither(true); //防抖动、柔化线条
-        mPaintOut.setStyle(Paint.Style.STROKE);
-        mPaintOut.setColor(Color.parseColor("#e0e0e0"));
+        mPaintOut.setStyle(Paint.Style.FILL);
+        mPaintOut.setColor(Color.parseColor("#ffffff"));
 
         mRectIn = new RectF();
         mRectOut = new RectF();
 
-        setPadding(tP[0], tP[1], tP[2], tP[3]);
+        setPadding(pL, pT, pR, pB);
+        setHeight(100);
+        setGravity();
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         int w = getMeasuredWidth();
         int h = getMeasuredHeight();
-        mRectIn.set(0, 0, w, h);
         mRectOut.set(0, 0, w, h);
+        mRectIn.set(lineW, lineW, w - lineW, h - lineW);
         //绘制背景,在绘制文字之前绘制
         canvas.drawRoundRect(mRectOut, round, round, mPaintOut);
         canvas.drawRoundRect(mRectIn, round, round, mPaintIn);
